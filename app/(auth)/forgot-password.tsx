@@ -1,121 +1,108 @@
-import { Link } from "expo-router";
+import AuthScaffold from "@/src/components/AuthScaffold";
+import { AuthButton, AuthInlineLink, AuthInput } from "@/src/components/auth/AuthUi";
+import { useAuthStore } from "@/stores/auth-store";
+import { router } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
-import { StyleSheet, View } from "react-native";
-import { Button, Text, TextInput } from "react-native-paper";
+import { StyleSheet, Text, View } from "react-native";
+import { useTheme } from "@/src/hooks/useTheme";
+import { useEffect } from "react";
 
 type ForgotPasswordValues = {
   email: string;
 };
 
 export default function ForgotPasswordScreen() {
+  const { colors } = useTheme();
+  const requestPasswordReset = useAuthStore((state) => state.requestPasswordReset);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const error = useAuthStore((state) => state.error);
+  const clearError = useAuthStore((state) => state.clearError);
+
+  useEffect(() => {
+    clearError();
+    return () => clearError();
+  }, [clearError]);
   const {
     control,
     handleSubmit,
-    formState: { errors, isSubmitSuccessful },
+    formState: { errors },
   } = useForm<ForgotPasswordValues>({
     defaultValues: {
       email: "",
     },
   });
 
-  const onSubmit = (data: ForgotPasswordValues) => {
-    console.log("Password reset requested for:", data.email);
+  const onSubmit = async (data: ForgotPasswordValues) => {
+    clearError();
+    const success = await requestPasswordReset(data.email);
+
+    if (success) {
+      router.push({
+        pathname: "/verify-reset-otp",
+        params: { email: data.email },
+      });
+    }
   };
 
   return (
-    <View style={styles.container}>
-      <Text variant="headlineSmall" style={styles.title}>
-        Forgot Password
-      </Text>
-      <Text style={styles.description}>
-        Enter the email tied to your account and we&apos;ll send a reset link.
-      </Text>
+    <AuthScaffold
+      title="Forgot Password"
+      subtitle="Enter your email address and we'll send a 6-digit code you can use to reset your password."
+      footer={
+        <AuthInlineLink
+          prefix="Remembered your password?"
+          action="Back to Login"
+          onPress={() => router.push("/login")}
+        />
+      }
+    >
+      <View style={styles.container}>
+        <Controller
+          control={control}
+          name="email"
+          rules={{
+            required: "Email is required",
+            pattern: {
+              value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+              message: "Invalid email address",
+            },
+          }}
+          render={({ field: { value, onChange } }) => (
+            <AuthInput
+              value={value}
+              onChangeText={onChange}
+              placeholder="Email address"
+              keyboardType="email-address"
+              textContentType="emailAddress"
+              autoCapitalize="none"
+              icon="mail"
+              iconSet="ionicons"
+            />
+          )}
+        />
+        {errors.email ? <Text style={[styles.errorText, { color: colors.error }]}>{errors.email.message}</Text> : null}
+        {error ? <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text> : null}
 
-      <Text style={styles.label}>Email</Text>
-      <Controller
-        control={control}
-        name="email"
-        rules={{
-          required: "Email is required",
-          pattern: {
-            value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-            message: "Invalid email address",
-          },
-        }}
-        render={({ field: { value, onChange } }) => (
-          <TextInput
-            value={value}
-            onChangeText={onChange}
-            mode="outlined"
-            placeholder="test@example.com"
-            keyboardType="email-address"
-            textContentType="emailAddress"
-            autoCapitalize="none"
+        <View style={styles.buttonWrap}>
+          <AuthButton
+            label={isLoading ? "Sending code..." : "Send OTP"}
+            onPress={handleSubmit(onSubmit)}
+            disabled={isLoading}
           />
-        )}
-      />
-      {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
-
-      {isSubmitSuccessful && (
-        <Text style={styles.successText}>
-          If this email exists in our system, a reset link is on its way.
-        </Text>
-      )}
-
-      <Button mode="contained" style={styles.button} onPress={handleSubmit(onSubmit)}>
-        Send Reset Link
-      </Button>
-
-      <View style={styles.footer}>
-        <Text>Remembered your password?</Text>
-        <Link href="/login">
-          <Button mode="text" compact>
-            Back to Login
-          </Button>
-        </Link>
+        </View>
       </View>
-    </View>
+    </AuthScaffold>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 24,
-    backgroundColor: "#FFFFFF",
-  },
-  title: {
-    textAlign: "center",
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  description: {
-    textAlign: "center",
-    color: "#5F6368",
-    marginBottom: 24,
-    lineHeight: 20,
-  },
-  label: {
-    marginBottom: 5,
-    fontWeight: "bold",
+    gap: 12,
   },
   errorText: {
-    color: "red",
-    marginTop: 6,
+    fontSize: 13,
   },
-  successText: {
-    color: "#1E8E3E",
-    marginTop: 12,
-  },
-  button: {
-    marginTop: 24,
-    borderRadius: 5,
-  },
-  footer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 20,
+  buttonWrap: {
+    marginTop: 22,
   },
 });

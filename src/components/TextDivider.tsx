@@ -1,26 +1,31 @@
-import { StyleSheet, View } from "react-native";
-import { Divider, Text } from "react-native-paper";
+import { StyleSheet, Text, View } from "react-native";
+import { useTheme } from "../hooks/useTheme";
 
-export const TextDivider = ({ label }: { label: string }) => (
-    <View style={styles.dividercontainer}>
-        <Divider style={styles.dividerline} />
-        <Text style={styles.dividertext}>{label}</Text>
-        <Divider style={styles.dividerline} />
+export const TextDivider = ({ label }: { label: string }) => {
+  const { colors } = useTheme();
+  
+  return (
+    <View style={styles.dividerContainer}>
+      <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+      <Text style={[styles.dividerText, { color: colors.textSecondary }]}>{label}</Text>
+      <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
     </View>
-);
+  );
+};
+
 const styles = StyleSheet.create({
-    dividercontainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 10,
-    },
-    dividerline: {
-        flex: 1,
-        height: 1,
-    },
-    dividertext: {
-        marginHorizontal: 10,
-        fontSize: 14,
-        color: 'gray',
-    },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    fontSize: 15,
+  },
 });
